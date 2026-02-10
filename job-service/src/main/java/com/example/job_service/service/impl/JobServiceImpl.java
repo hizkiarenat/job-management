@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import com.example.job_service.dto.JobWithCompanyDTO;
+import com.example.job_service.external.Company;
 import com.example.job_service.model.Job;
 import com.example.job_service.repository.JobRepository;
 import com.example.job_service.service.JobService;
@@ -21,8 +24,25 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
-    public List<Job> findAllJob() {
-        return jobRepository.findAll();
+    public List<JobWithCompanyDTO> findAllJob() {
+        List<Job> jobs = jobRepository.findAll();
+        List<JobWithCompanyDTO> jobWithCompanyDTOs = new ArrayList<>();
+        RestTemplate restTemplate = new RestTemplate();
+
+        for (Job job : jobs) {
+            JobWithCompanyDTO jobWithCompanyDTO = new JobWithCompanyDTO();
+            jobWithCompanyDTO.setJob(job);
+
+            Company company = restTemplate.getForObject("http://company-service:2000/company/" + job.getCompanyId(),
+                    Company.class);
+            jobWithCompanyDTO.setCompany(company);
+
+            jobWithCompanyDTOs.add(jobWithCompanyDTO);
+            System.out.println("COMPANY :" + company.getName());
+            System.out.println("COMPANY :" + company.getId());
+        }
+
+        return jobWithCompanyDTOs;
     }
 
     @Override

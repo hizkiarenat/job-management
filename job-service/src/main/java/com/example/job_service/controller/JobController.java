@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.job_service.dto.JobWithCompanyDTO;
 import com.example.job_service.model.Job;
 import com.example.job_service.service.JobService;
 
@@ -27,9 +28,8 @@ public class JobController {
     }
 
     @GetMapping
-    public List<Job> findAll() {
-        List<Job> findAllJob = jobService.findAllJob();
-        return findAllJob;
+    public ResponseEntity<List<JobWithCompanyDTO>> findAll() {
+        return ResponseEntity.ok(jobService.findAllJob());
     }
 
     @PostMapping
