@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - backend
+
+  review-service:
+    build: ./review-service
+    container_name: review-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+  job-service:
+    build: ./job-service
+    container_name: job-service
+    ports:
+      - "1000:1000"
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+  company-service:
+    build: ./company-service
+    container_name: company-service
+    ports:
+      - "2000:2000"
+    depends_on:
+      - postgres
+    networks:
+      - backend
+
+volumes:
+  postgres-data:
+
+networks:
+  backend:
+    driver: bridge
