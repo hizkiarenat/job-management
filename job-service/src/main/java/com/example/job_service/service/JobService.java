@@ -11,7 +11,7 @@ public interface JobService {
 
     public Job createJob(Job job);
 
-    public Job getJobById(Long id);
+    public JobWithCompanyDTO getJobById(Long id);
 
     public boolean deleteById(Long id);
 
