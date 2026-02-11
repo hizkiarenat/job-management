@@ -16,6 +16,14 @@ services:
     networks:
       - backend
 
+  service-regis:
+    build: ./service-regis
+    container_name: service-regis
+    ports:
+      - "1234:1234"
+    networks:
+      - backend
+
   review-service:
     build: ./review-service
     container_name: review-service
@@ -23,6 +31,7 @@ services:
       - "3000:3000"
     depends_on:
       - postgres
+      - service-regis
     networks:
       - backend
 
@@ -33,6 +42,7 @@ services:
       - "1000:1000"
     depends_on:
       - postgres
+      - service-regis
     networks:
       - backend
 
@@ -43,6 +53,7 @@ services:
       - "2000:2000"
     depends_on:
       - postgres
+      - service-regis
     networks:
       - backend
 
