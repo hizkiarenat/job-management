@@ -1,18 +1,14 @@
 package com.example.job_service.service.impl;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.example.job_service.client.CompanyClient;
+import com.example.job_service.client.ReviewClient;
 import com.example.job_service.dto.JobDTO;
 import com.example.job_service.external.Company;
 import com.example.job_service.external.Review;
@@ -24,13 +20,16 @@ import com.example.job_service.service.JobService;
 @Service
 public class JobServiceImpl implements JobService {
 
-    @Autowired
-    RestTemplate restTemplate;
+    private final CompanyClient companyClient;
 
-    JobRepository jobRepository;
+    private final JobRepository jobRepository;
 
-    public JobServiceImpl(JobRepository jobRepository) {
+    private final ReviewClient reviewClient;
+
+    public JobServiceImpl(CompanyClient companyClient, JobRepository jobRepository, ReviewClient reviewClient) {
+        this.companyClient = companyClient;
         this.jobRepository = jobRepository;
+        this.reviewClient = reviewClient;
     }
 
     @Override
@@ -62,10 +61,10 @@ public class JobServiceImpl implements JobService {
         if (jobOptional.isPresent()) {
             Job job = jobOptional.get();
             job.setTitle(updateJob.getTitle());
-            job.setDescription(updateJob.getTitle());
-            job.setMinSalary(updateJob.getTitle());
-            job.setMaxSalary(updateJob.getTitle());
-            job.setLocation(updateJob.getTitle());
+            job.setDescription(updateJob.getDescription());
+            job.setMinSalary(updateJob.getMinSalary());
+            job.setMaxSalary(updateJob.getMaxSalary());
+            job.setLocation(updateJob.getLocation());
             jobRepository.save(job);
 
             return true;
@@ -75,17 +74,13 @@ public class JobServiceImpl implements JobService {
     }
 
     private JobDTO convertToDto(Job job) {
-        Company company = restTemplate.getForObject("http://company-service:2000/company/" + job.getCompanyId(),
-                Company.class);
-        ResponseEntity<List<Review>> reviewResponse = restTemplate
-                .exchange("http://review-service:3000/reviews?companyId=" + job.getCompanyId(), 
-                HttpMethod.GET, 
-                null, 
-                new ParameterizedTypeReference<List<Review>>(){
-                });
-        List<Review> reviews = reviewResponse.getBody();
-        JobDTO jobWithCompanyDTO = JobMapper.mapToJobWithCompanyDTO(job, company, reviews);
-        
+        // call company-service with openFeign
+        Company company = companyClient.getCompanyById(job.getCompanyId());
+
+        // call review-service with openFeign
+        List<Review> reviewResponse = reviewClient.getReview(job.getCompanyId());
+
+        JobDTO jobWithCompanyDTO = JobMapper.mapToJobWithCompanyDTO(job, company, reviewResponse);
         return jobWithCompanyDTO;
 
     }
