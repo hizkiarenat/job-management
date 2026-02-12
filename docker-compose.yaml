@@ -79,6 +79,22 @@ services:
       - zipkin
     networks:
       - backend
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "9000:9000"
+    environment:
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+    depends_on:
+      - service-regis
+      - zipkin
+      - job-service
+      - company-service
+      - review-service
+    networks:
+      - backend
 
 volumes:
   postgres-data:
