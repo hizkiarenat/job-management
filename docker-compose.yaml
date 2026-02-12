@@ -15,10 +15,21 @@ services:
       - ./init-db:/docker-entrypoint-initdb.d
     networks:
       - backend
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - backend
 
   service-regis:
     build: ./service-regis
     container_name: service-regis
+    environment:
+      - SPRING_ZIPKIN_BASE_URL=http://zipkin:9411
+    depends_on:
+      - zipkin
     ports:
       - "1234:1234"
     networks:
@@ -29,9 +40,13 @@ services:
     container_name: review-service
     ports:
       - "3000:3000"
+    environment:
+       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+       - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
       - postgres
       - service-regis
+      - zipkin
     networks:
       - backend
 
@@ -40,9 +55,13 @@ services:
     container_name: job-service
     ports:
       - "1000:1000"
+    environment:
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
       - postgres
       - service-regis
+      - zipkin
     networks:
       - backend
 
@@ -51,9 +70,13 @@ services:
     container_name: company-service
     ports:
       - "2000:2000"
+    environment:
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
     depends_on:
       - postgres
       - service-regis
+      - zipkin
     networks:
       - backend
 
