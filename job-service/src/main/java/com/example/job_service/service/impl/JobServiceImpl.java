@@ -1,5 +1,6 @@
 package com.example.job_service.service.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -17,6 +18,8 @@ import com.example.job_service.model.Job;
 import com.example.job_service.repository.JobRepository;
 import com.example.job_service.service.JobService;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+
 @Service
 public class JobServiceImpl implements JobService {
 
@@ -33,6 +36,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @CircuitBreaker(name = "companyBreaker", fallbackMethod = "companyBreakerFallback")
     public List<JobDTO> findAllJob() {
         List<Job> jobs = jobRepository.findAll();
         return jobs.stream().map(this::convertToDto).collect(Collectors.toList());
@@ -83,5 +87,11 @@ public class JobServiceImpl implements JobService {
         JobDTO jobWithCompanyDTO = JobMapper.mapToJobWithCompanyDTO(job, company, reviewResponse);
         return jobWithCompanyDTO;
 
+    }
+
+    private List<String> companyBreakerFallback() {
+        List<String> list = new ArrayList<>();
+        list.add("Services is down, wait a minute...");
+        return list;
     }
 }
