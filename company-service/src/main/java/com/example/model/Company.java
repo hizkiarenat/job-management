@@ -13,6 +13,8 @@ public class Company {
     private Long id;
     private String name;
     private String description;
+    private double rating;
+    
     
     public Company() {
     }
@@ -42,9 +44,17 @@ public class Company {
         this.description = description;
     }
 
+    public double getRating() {
+        return rating;
+    }
+
+    public void setRating(double rating) {
+        this.rating = rating;
+    }
+
     @Override
     public String toString() {
-        return "Company [id=" + id + ", name=" + name + ", description=" + description + "]";
+        return "Company [id=" + id + ", name=" + name + ", description=" + description + ", rating=" + rating + "]";
     }
     
 }

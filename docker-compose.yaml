@@ -15,6 +15,24 @@ services:
       - ./init-db:/docker-entrypoint-initdb.d
     networks:
       - backend
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    ports:
+      - "5672:5672"   # AMQP port (untuk aplikasi)
+      - "15672:15672" # Management UI port (untuk monitoring)
+    networks:
+      - backend
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   zipkin:
     image: openzipkin/zipkin
     container_name: zipkin
@@ -41,12 +59,21 @@ services:
     ports:
       - "3000:3000"
     environment:
-       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
-       - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+      - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
     depends_on:
-      - postgres
-      - service-regis
-      - zipkin
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      service-regis:
+        condition: service_started
+      zipkin:
+        condition: service_started
     networks:
       - backend
 
@@ -58,10 +85,19 @@ services:
     environment:
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
       - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
     depends_on:
-      - postgres
-      - service-regis
-      - zipkin
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      service-regis:
+        condition: service_started
+      zipkin:
+        condition: service_started
     networks:
       - backend
 
@@ -73,12 +109,22 @@ services:
     environment:
       - MANAGEMENT_ZIPKIN_TRACING_ENDPOINT=http://zipkin:9411/api/v2/spans
       - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=admin
+      - SPRING_RABBITMQ_PASSWORD=admin123
     depends_on:
-      - postgres
-      - service-regis
-      - zipkin
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      service-regis:
+        condition: service_started
+      zipkin:
+        condition: service_started
     networks:
       - backend
+
   gateway:
     build: ./gateway
     container_name: gateway
