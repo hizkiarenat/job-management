@@ -1,6 +1,9 @@
 package com.example.job_service.external;
 
-public class Review {
+import java.io.Serializable;
+
+public class Review implements Serializable{
+    private static final long serialVersionUID = 1L;
 
     private Long id;
     private String title;

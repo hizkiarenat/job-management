@@ -16,6 +16,22 @@ services:
     networks:
       - backend
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -23,7 +39,7 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin123
     ports:
-      - "5672:5672"   # AMQP port (untuk aplikasi)
+      - "5672:5672" # AMQP port (untuk aplikasi)
       - "15672:15672" # Management UI port (untuk monitoring)
     networks:
       - backend
@@ -89,6 +105,8 @@ services:
       - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=admin
       - SPRING_RABBITMQ_PASSWORD=admin123
+      - SPRING_REDIS_HOST=redis      
+      - SPRING_REDIS_PORT=6379  
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -98,6 +116,8 @@ services:
         condition: service_started
       zipkin:
         condition: service_started
+      redis:                         
+        condition: service_healthy
     networks:
       - backend
 
@@ -144,6 +164,8 @@ services:
 
 volumes:
   postgres-data:
+  redis-data:
+
 
 networks:
   backend:

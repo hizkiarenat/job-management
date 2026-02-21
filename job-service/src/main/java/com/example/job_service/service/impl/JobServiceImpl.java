@@ -5,8 +5,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import com.example.job_service.client.CompanyClient;
 import com.example.job_service.client.ReviewClient;
@@ -23,6 +27,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 @Service
 public class JobServiceImpl implements JobService {
 
+    private static final Logger logger = LoggerFactory.getLogger(JobServiceImpl.class);
+
     private final CompanyClient companyClient;
 
     private final JobRepository jobRepository;
@@ -35,20 +41,41 @@ public class JobServiceImpl implements JobService {
         this.reviewClient = reviewClient;
     }
 
+    /**
+     * Get all jobs (CACHED for 10 minutes)
+     * Cache key: "jobs::all"
+     */
     @Override
     @CircuitBreaker(name = "companyBreaker", fallbackMethod = "companyBreakerFallback")
+    @Cacheable(value = "jobs", key = "'all'")
     public List<JobDTO> findAllJob() {
+        logger.info("Fetching all jobs from database(CACHE MISS)");
         List<Job> jobs = jobRepository.findAll();
         return jobs.stream().map(this::convertToDto).collect(Collectors.toList());
     }
 
+    /**
+     * Create job (CLEAR ALL CACHE)
+     * Why clear "all"? Because job list changed
+     */
     @Override
+    @CacheEvict(value = "jobs", key = "'all'")
     public Job createJob(Job job) {
+        logger.info("Creating new job (CLEARING CACHE for 'all')");
+        if (job == null) {
+            throw new IllegalArgumentException("Job cannot be null");
+        }
         return jobRepository.save(job);
     }
 
+    /**
+     * Get job by ID (CACHED for 10 minutes)
+     * Cache key: "jobs::1", "jobs::2", etc
+     */
     @Override
+    @Cacheable(value = "jobs", key = "#id")
     public JobDTO getJobById(Long id) {
+        logger.info("Fetching job {} from database (CACHE MISS)", id);
         Job job = jobRepository.findById(id).orElse(null);
         return convertToDto(job);
     }
@@ -59,7 +86,13 @@ public class JobServiceImpl implements JobService {
         return true;
     }
 
+    /**
+     * Update job (UPDATE CACHE)
+     * @CachePut: Update cache with new value
+     */
     @Override
+    @CachePut(value = "jobs", key = "#id")
+    @CacheEvict(value = "jobs", key = "'all'")
     public boolean updateJob(Long id, Job updateJob) {
         Optional<Job> jobOptional = jobRepository.findById(id);
         if (jobOptional.isPresent()) {

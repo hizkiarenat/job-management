@@ -1,12 +1,14 @@
 package com.example.job_service.dto;
 
+import java.io.Serializable;
 import java.util.List;
 
 import com.example.job_service.external.Company;
 import com.example.job_service.external.Review;
 
-public class JobDTO {
+public class JobDTO implements Serializable{
 
+    private static final long serialVersionUID = 1L;
     private Long id;
     private String title;
     private String description;
